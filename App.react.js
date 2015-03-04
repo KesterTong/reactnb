@@ -1,9 +1,11 @@
 var App = React.createClass({
   getInitialState: function() {
     return {
-      cells: [{inputPromptNumber: 1, id: 100}, {inputPromptNumber:100, id: 101}],
+      cells: { 100: {}, },
+      cellOrder: [100],
       selectedId: 100,
-      mode: 'command'
+      mode: 'command',
+      kernel: new Kernel()
     }
   },
 
@@ -16,45 +18,64 @@ var App = React.createClass({
   },
 
   insertCellAbove: function() {
-    newCells = [];
     var newCellId = Math.round(Math.random() * 1000000);
-    for (var i = 0; i < this.state.cells.length; i++) {
-      if (this.state.cells[i].id == this.state.selectedId) {
-        newCells.push({id: newCellId});
+    var newCell = {};
+
+    newCells = this.state.cells;
+    newCells[newCellId] = newCell;
+    newCellOrder = [];
+    for (var i = 0; i < this.state.cellOrder.length; i++) {
+      if (this.state.cellOrder[i] == this.state.selectedId) {
+        newCellOrder.push(newCellId);
       }
-      newCells.push(this.state.cells[i]);
+      newCellOrder.push(this.state.cellOrder[i]);
     }
-    this.setState({cells: newCells, selectedId: newCellId});
+    this.setState({cells: newCells, cellOrder: newCellOrder, selectedId: newCellId});
   },
 
   insertCellBelow: function() {
-    newCells = [];
     var newCellId = Math.round(Math.random() * 1000000);
-    for (var i = 0; i < this.state.cells.length; i++) {
-      newCells.push(this.state.cells[i]);
-      if (this.state.cells[i].id == this.state.selectedId) {
-        newCells.push({id: newCellId});
+    var newCell = {};
+
+    newCells = this.state.cells;
+    newCells[newCellId] = newCell;
+    newCellOrder = [];
+    for (var i = 0; i < this.state.cellOrder.length; i++) {
+      newCellOrder.push(this.state.cellOrder[i]);
+      if (this.state.cellOrder[i] == this.state.selectedId) {
+        newCellOrder.push(newCellId);
       }
     }
-    this.setState({cells: newCells, selectedId: newCellId});
+    this.setState({cells: newCells, cellOrder: newCellOrder, selectedId: newCellId});
   },
 
   deleteCell: function() {
-    newCells = [];
-    var newKey = Math.round(Math.random() * 1000000);
+    var newCells = this.state.cells;
+    delete newCells[this.state.selectedId];
+
+    var newCellOrder = []
     var newSelectedId;
-    for (var i = 0; i < this.state.cells.length; i++) {
-      if (this.state.cells[i].id == this.state.selectedId) {
+    for (var i = 0; i < this.state.cellOrder.length; i++) {
+      if (this.state.cellOrder[i] == this.state.selectedId) {
         if (i == 0) {
-          newSelectedId = this.state.cells[i + 1].id;
+          newSelectedId = this.state.cellOrder[i + 1];
         } else {
-          newSelectedId = this.state.cells[i - 1].id;
+          newSelectedId = this.state.cellOrder[i - 1];
         }
       } else {
-        newCells.push(this.state.cells[i]);        
+        newCellOrder.push(this.state.cellOrder[i]);
       }
     }
-    this.setState({cells: newCells, selectedId: newSelectedId});
+    this.setState({cells: newCells, cellOrder: newCellOrder, selectedId: newSelectedId});
+  },
+
+  runCell: function(cellId, code) {
+    this.state.kernel.execute(code, function(result) {
+      var newCells = this.state.cells;
+      newCells[cellId].inputPromptNumber = result.execution_count;
+      newCells[cellId].outputContent = result.data;
+      this.setState({cells: newCells});
+    }.bind(this));
   },
 
   menu: function() {
@@ -92,7 +113,7 @@ var App = React.createClass({
             <Menubar items={ this.menu() } />
           </div>
         </div>
-        <Notebook {...this.state} setSelected={this.setSelected} updateMode={this.updateMode} />
+        <Notebook {...this.state} setSelected={this.setSelected} updateMode={this.updateMode} runCell={this.runCell} />
       </div>
     )
   }

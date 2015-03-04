@@ -5,8 +5,9 @@ var Notebook = React.createClass({
         <div id="notebook" tabIndex="-1">
           <div className="container" id="notebook-container">
             {
-              this.props.cells.map(function(cell) {
-                return <CodeCell inputPromptNumber={cell.inputPromptNumber} key={cell.id} id={cell.id} selected={cell.id == this.props.selectedId} updateMode={this.props.updateMode} setSelected={this.props.setSelected} />;
+              this.props.cellOrder.map(function(id) {
+                var cell = this.props.cells[id];
+                return <CodeCell {...cell} id={id} key={id} selected={id == this.props.selectedId} {...this.props} />;
               }, this)
             }
           </div>
